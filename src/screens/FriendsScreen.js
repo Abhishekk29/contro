@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 
-export default function SettingsScreen() {
+export default function FriendsScreen() {
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Settings Coming Soon...</Text>
+      <Text>Friends List Coming Soon...</Text>
     </View>
   );
 }
