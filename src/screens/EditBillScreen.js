@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,15 +6,16 @@ import {
   Button,
   KeyboardAvoidingView,
   Platform,
-  StyleSheet,
-  Pressable,
+  TouchableWithoutFeedback,
   Keyboard,
+  StyleSheet
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Snackbar } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { getBills, saveBills } from '../storage';
 
-export default function AddBillScreen({ navigation }) {
+export default function EditBillScreen({ navigation, route }) {
+  const { billId } = route.params;
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [dueDate, setDueDate] = useState(new Date());
@@ -22,27 +23,49 @@ export default function AddBillScreen({ navigation }) {
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
 
-  const handleAddBill = async () => {
-    if (!name || !amount) return;
-
-    const newBill = {
-      id: Date.now().toString(),
-      name,
-      amount: parseFloat(amount),
-      dueDate: dueDate.toISOString(),
+  useEffect(() => {
+    const loadBill = async () => {
+      try {
+        const storedBills = await AsyncStorage.getItem('bills');
+        if (storedBills) {
+          const bills = JSON.parse(storedBills);
+          const billToEdit = bills.find(bill => bill.id === billId);
+          if (billToEdit) {
+            setName(billToEdit.name);
+            setAmount(billToEdit.amount.toString());
+            setDueDate(new Date(billToEdit.dueDate));
+          }
+        }
+      } catch (error) {
+        console.error('Error loading bill:', error);
+      }
     };
+    loadBill();
+  }, [billId]);
 
-    const bills = await getBills();
-    bills.push(newBill);
-    await saveBills(bills);
+  const handleUpdateBill = async () => {
+    try {
+      const storedBills = await AsyncStorage.getItem('bills');
+      if (storedBills) {
+        let bills = JSON.parse(storedBills);
+        bills = bills.map(bill =>
+          bill.id === billId
+            ? { ...bill, name, amount: parseFloat(amount), dueDate: dueDate.toISOString() }
+            : bill
+        );
+        await AsyncStorage.setItem('bills', JSON.stringify(bills));
+      }
 
-    setSnackbarMessage('✅ Bill added successfully');
-    setSnackbarVisible(true);
+      setSnackbarMessage('✅ Bill updated successfully');
+      setSnackbarVisible(true);
 
-    setTimeout(() => {
-      setSnackbarVisible(false);
-      navigation.navigate('Home');
-    }, 1500);
+      setTimeout(() => {
+        setSnackbarVisible(false);
+        navigation.goBack(); // go back to Home
+      }, 1500);
+    } catch (error) {
+      console.error('Error updating bill:', error);
+    }
   };
 
   const onChangeDate = (event, selectedDate) => {
@@ -53,10 +76,10 @@ export default function AddBillScreen({ navigation }) {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.container}
     >
-      <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.inner}>
           <Text style={styles.label}>Bill Name</Text>
           <TextInput
@@ -76,10 +99,9 @@ export default function AddBillScreen({ navigation }) {
           />
 
           <Text style={styles.label}>
-            Due Date: {dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            Due Date: {dueDate.toDateString()}
           </Text>
           <Button title="Select Date" onPress={() => setShowDatePicker(true)} />
-
           {showDatePicker && (
             <DateTimePicker
               value={dueDate}
@@ -89,8 +111,8 @@ export default function AddBillScreen({ navigation }) {
             />
           )}
 
-          <View style={{ marginTop: 20 }}>
-            <Button title="Add Bill" onPress={handleAddBill} />
+          <View style={styles.updateButton}>
+            <Button title="Update Bill" onPress={handleUpdateBill} />
           </View>
 
           <Snackbar
@@ -102,14 +124,16 @@ export default function AddBillScreen({ navigation }) {
             {snackbarMessage}
           </Snackbar>
         </View>
-      </Pressable>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  container: { flex: 1 },
   inner: { flex: 1, padding: 20, justifyContent: 'flex-start' },
   label: { fontWeight: 'bold', marginTop: 10 },
   input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 5, padding: 8, marginTop: 5 },
-  snackbar: { backgroundColor: '#333', position: 'absolute', top: 0, left: 0, right: 0 },
+  updateButton: { marginTop: 20 },
+  snackbar: { backgroundColor: '#333', position: 'absolute', top: 50, left: 0, right: 0 },
 });
