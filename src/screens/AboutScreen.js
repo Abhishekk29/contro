@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 20,
-    marginBottom: 30,
+    marginBottom: 45,
   },
   link: {
     color: '#089babff',

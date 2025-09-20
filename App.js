@@ -1,5 +1,6 @@
 // App.js
-import React from 'react';
+import React, { useEffect } from 'react';
+import * as SplashScreenExpo from 'expo-splash-screen';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createStackNavigator, CardStyleInterpolators, TransitionPresets } from '@react-navigation/stack';
 import { enableScreens } from 'react-native-screens';
@@ -7,7 +8,7 @@ import { UserProvider } from './src/context/UserContext';
 import { BillsProvider } from './src/context/BillsContext';
 
 import EntryScreen from './src/screens/EntryScreen';
-import SplashScreen from './src/screens/SplashScreen';
+import SplashScreen from './src/screens/SplashScreen'; // your custom Lottie splash
 import QuickControScreen from './src/screens/QuickControScreen';
 import SignupScreen from './src/screens/SignupScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -18,10 +19,10 @@ import FriendsScreen from './src/screens/FriendsScreen';
 import InvoiceScreen from './src/screens/InvoiceScreen';
 import AboutScreen from './src/screens/AboutScreen';
 
-// 🔕 turn off native screens optimizations to avoid the white flash
+// Disable native screens optimization to avoid white flash
 enableScreens(false);
 
-// JS stacks (not native)
+// JS stacks
 const RootStack = createStackNavigator();
 const MainStack = createStackNavigator();
 
@@ -29,12 +30,11 @@ const MyTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    background: '#181717ff', // dark behind everything
+    background: '#181717ff',
   },
 };
 
-
-// ✅ Main App Stack (JS)
+// ✅ Main app stack
 function MainAppStack() {
   return (
     <MainStack.Navigator
@@ -42,9 +42,7 @@ function MainAppStack() {
         headerStyle: { backgroundColor: '#6200EE' },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: 'bold' },
-        // dark background during transitions
         cardStyle: { backgroundColor: '#181717ff' },
-        // smooth iOS-like slide with proper card bg
         cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
         ...TransitionPresets.SlideFromRightIOS,
         gestureEnabled: true,
@@ -59,7 +57,17 @@ function MainAppStack() {
   );
 }
 
+// Prevent native splash from hiding before JS loads
+SplashScreenExpo.preventAutoHideAsync();
+
 export default function App() {
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      await SplashScreenExpo.hideAsync(); // hide native splash quickly
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <UserProvider>
       <BillsProvider>
@@ -68,9 +76,7 @@ export default function App() {
             screenOptions={{
               headerShown: false,
               gestureEnabled: true,
-              // dark card bg everywhere (prevents any white during back)
               cardStyle: { backgroundColor: '#181717ff' },
-              // consistent slide transition that respects card bg
               cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
               ...TransitionPresets.SlideFromRightIOS,
             }}

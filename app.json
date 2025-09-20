@@ -1,19 +1,34 @@
 {
   "expo": {
-    "name": "contro",
+    "name": "Contro",
     "slug": "contro",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "splash": {
+      "image": "./assets/images/transparent.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
     "scheme": "contro",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "splash": {
+        "image": "./assets/images/transparent.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#000000"
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon.png"
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "splash": {
+        "image": "./assets/images/transparent.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.abhisheksharma29.contro"
@@ -23,11 +38,13 @@
       "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
-
     "extra": {
       "eas": {
         "projectId": "02ac3705-a27a-4eb7-8fda-c27cb9893d53"
       }
-    }
+    },
+    "plugins": [
+      "expo-asset"
+    ]
   }
 }

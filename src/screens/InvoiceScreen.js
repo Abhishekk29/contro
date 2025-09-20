@@ -1,24 +1,50 @@
 import React from "react";
-import { View, SafeAreaView, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Image } from "react-native";
+import { View, SafeAreaView, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from "react-native";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
-import { Image as RNImage } from "react-native";
+import { Asset } from "expo-asset";
+import * as FileSystem from "expo-file-system";
+import * as ImageManipulator from "expo-image-manipulator";
 
 export default function InvoiceScreen({ route }) {
   const { controName, totalContro, people } = route.params;
 
-  // Resolve local image path
-  const logo = RNImage.resolveAssetSource(require("../../assets/images/logo.png")).uri;
+  // Helper: copy logo to cacheDirectory and convert to base64
+  const getLogoBase64 = async () => {
+    try {
+      const asset = Asset.fromModule(require("../../assets/images/logo.png"));
+      await asset.downloadAsync();
 
-  const generateHTML = (controName, totalContro, people = [], logo) => {
+      // Copy to cacheDirectory
+      const cachePath = `${FileSystem.cacheDirectory}logo.png`;
+      await FileSystem.copyAsync({
+        from: asset.localUri || asset.uri,
+        to: cachePath,
+      });
+
+      // Resize and get base64
+      const resized = await ImageManipulator.manipulateAsync(
+        cachePath,
+        [{ resize: { width: 300 } }],
+        { compress: 0.8, format: ImageManipulator.SaveFormat.PNG, base64: true }
+      );
+
+      if (!resized.base64) throw new Error("Failed to convert logo to base64");
+      return `data:image/png;base64,${resized.base64}`;
+    } catch (err) {
+      console.error("Error loading logo:", err);
+      throw err;
+    }
+  };
+
+  const generateHTML = (controName, totalContro, people = [], logoBase64) => {
     const date = new Date().toLocaleDateString();
-
     const rows = people.map((p, i) => `
       <tr style="background-color: ${i % 2 === 0 ? '#1e1e1e' : '#2c2c2c'}">
-        <td style="padding: 10px; text-align:center;">${i + 1}</td>
-        <td style="padding: 10px; text-align:left;">${p.name}</td>
-        <td style="padding: 10px; text-align:right;">₹${Number(p.amount).toFixed(2)}</td>
-        <td style="padding: 10px; word-break: break-word; max-width: 250px;">${p.note || '-'}</td>
+        <td style="padding:10px; text-align:center;">${i + 1}</td>
+        <td style="padding:10px; text-align:left;">${p.name}</td>
+        <td style="padding:10px; text-align:left;">₹${Number(p.amount).toFixed(2)}</td>
+        <td style="padding:10px; word-break:break-word; max-width:250px;">${p.note || '-'}</td>
       </tr>
     `).join("");
 
@@ -26,19 +52,19 @@ export default function InvoiceScreen({ route }) {
       <html>
         <head>
           <style>
-            body { font-family: Arial, sans-serif; margin:0; padding:0; background-color: #121212; color:#fff; }
-            .header { background: linear-gradient(90deg, #6c5ce7, #a29bfe); padding: 20px; display:flex; justify-content:space-between; align-items:center; color:#fff; }
+            body { font-family: Arial, sans-serif; margin:0; padding:0; background-color:#121212; color:#fff; }
+            .header { background: linear-gradient(90deg,#6c5ce7,#a29bfe); padding:20px; display:flex; justify-content:space-between; align-items:center; color:#fff; }
             .header h1 { margin:0; font-size:26px; font-weight:bold; }
             .header .date { font-size:14px; opacity:0.9; }
-            table { width:100%; border-collapse: collapse; margin-top: 20px; color:#fff; table-layout: fixed; }
-            th { background-color: #6c5ce7; padding:12px; text-align:left; color:#fff; font-weight:bold; }
-            td { border-bottom:1px solid #444; padding:10px; vertical-align: top; }
-            td.amount { text-align:right; color:#ffd700; font-weight:600; }
-            tr:nth-child(even) td { background-color: #1e1e1e; }
-            tr:nth-child(odd) td { background-color: #2c2c2c; }
-            .total { margin-top:20px; font-weight:bold; text-align:right; font-size:16px; color:#6c5ce7; }
+            table { width:100%; border-collapse:collapse; margin-top:20px; color:#fff; table-layout:fixed; }
+            th { background-color:#6c5ce7; padding:12px; text-align:left; color:#fff; font-weight:bold; }
+            td { border-bottom:1px solid #444; padding:10px; vertical-align:top; }
+            td.amount { text-align:left; color:#ffd700; font-weight:600; }
+            tr:nth-child(even) td { background-color:#1e1e1e; }
+            tr:nth-child(odd) td { background-color:#2c2c2c; }
+            .total { margin-top:20px; font-weight:bold; text-align:center; font-size:16px; color:#6c5ce7; }
             .footer { margin-top:40px; text-align:center; font-size:14px; color:#888; font-style:italic; }
-            .footer img { width: 120px; height:auto; margin-top:10px; }
+            .footer img { width:120px; height:auto; margin-top:10px; }
           </style>
         </head>
         <body>
@@ -62,9 +88,8 @@ export default function InvoiceScreen({ route }) {
             </tr>
           </table>
           <div class="footer">
-            Generated by Quick Contro
-            <br/>
-            <img src="${logo}" />
+            Generated by Quick Contro<br/>
+            <img src="${logoBase64}" />
           </div>
         </body>
       </html>
@@ -73,15 +98,14 @@ export default function InvoiceScreen({ route }) {
 
   const handlePrint = async () => {
     try {
-      const html = generateHTML(controName, totalContro, people || [], logo);
+      const logoBase64 = await getLogoBase64();
+      const html = generateHTML(controName, totalContro, people || [], logoBase64);
       const { uri } = await Print.printToFileAsync({ html });
-
       await Sharing.shareAsync(uri, {
         mimeType: "application/pdf",
         dialogTitle: "Share your Contro PDF",
         UTI: "com.adobe.pdf",
       });
-
     } catch (err) {
       console.error(err);
       Alert.alert("Error", err.message);
@@ -91,25 +115,23 @@ export default function InvoiceScreen({ route }) {
   return (
     <ScrollView style={styles.container}>
       <SafeAreaView style={{ flex: 1 }}>
-        <SafeAreaView style={{ flex: 1}}>
-          <View style={{ flex: 1, padding: 20 }}>
-            <Text style={styles.header}>{controName}</Text>
-          </View>
-        </SafeAreaView>
+        <View style={{ flex: 1, padding: 20 }}>
+          <Text style={styles.header}>{controName}</Text>
+        </View>
 
         <View style={styles.tableHeader}>
-          <Text style={[styles.cell, {flex:0.05}]}>#</Text>
-          <Text style={[styles.cell, {flex:0.25}]}>Name</Text>
-          <Text style={[styles.cellAmount, {flex:0.20}]}>Amount</Text>
-          <Text style={[styles.cell, {flex:0.55,textAlign:"center"}]}>Note</Text>
+          <Text style={[styles.cell, { flex: 0.05 }]}>#</Text>
+          <Text style={[styles.cell, { flex: 0.25 }]}>Name</Text>
+          <Text style={[styles.cellAmount, { flex: 0.20 }]}>Amount</Text>
+          <Text style={[styles.cell, { flex: 0.55, textAlign: "center" }]}>Note</Text>
         </View>
 
         {people.map((p, i) => (
           <View key={i} style={[styles.row, i % 2 === 0 ? styles.evenRow : styles.oddRow]}>
-            <Text style={[styles.cell, {flex:0.05}]}>{i + 1}</Text>
-            <Text style={[styles.cell, {flex:0.25}]}>{p.name}</Text>
-            <Text style={[styles.cellAmount, {flex:0.25}]}>₹{Number(p.amount).toFixed(2)}</Text>
-            <Text style={[styles.cell, {flex:0.55,textAlign:"center"}]}>{p.note || "-"}</Text>
+            <Text style={[styles.cell, { flex: 0.05 }]}>{i + 1}</Text>
+            <Text style={[styles.cell, { flex: 0.25 }]}>{p.name}</Text>
+            <Text style={[styles.cellAmount, { flex: 0.25,textAlign:"center" }]}>₹{Number(p.amount).toFixed(2)}</Text>
+            <Text style={[styles.cell, { flex: 0.55, textAlign: "center" }]}>{p.note || "-"}</Text>
           </View>
         ))}
 
@@ -128,12 +150,12 @@ export default function InvoiceScreen({ route }) {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: "#121212" },
   header: { fontSize: 26, fontWeight: "bold", marginBottom: 16, color: "#fff" },
-  tableHeader: { flexDirection: "row", paddingVertical: 12, paddingHorizontal: 8, borderBottomWidth:1, borderColor:"#444", marginBottom:4 },
+  tableHeader: { flexDirection: "row", paddingVertical: 12, paddingHorizontal: 8, borderBottomWidth: 1, borderColor: "#444", marginBottom: 4 },
   row: { flexDirection: "row", paddingVertical: 12, paddingHorizontal: 8, borderRadius: 8, marginBottom: 4 },
   evenRow: { backgroundColor: "#1e1e1e" },
   oddRow: { backgroundColor: "#2c2c2c" },
-  cell: { color: "#fff", textAlign:"left", paddingHorizontal:4 },
-  cellAmount: { color: "#ffffffff", fontWeight:"600", textAlign:"right", paddingHorizontal:4 },
+  cell: { color: "#fff", textAlign: "left", paddingHorizontal: 4 },
+  cellAmount: { color: "#fff", fontWeight: "600", textAlign: "center", paddingHorizontal: 4 },
   total: { fontSize: 18, fontWeight: "bold", marginVertical: 16, color: "#6c5ce7", textAlign: "right" },
   btn: { backgroundColor: "#6c5ce7", padding: 16, borderRadius: 8, alignItems: "center", marginBottom: 20 },
   btnText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
