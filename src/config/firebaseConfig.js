@@ -1,19 +1,23 @@
-// src/config/firebaseConfig.js
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { initializeAuth, getReactNativePersistence } from "firebase/auth";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getFirestore } from "firebase/firestore";
 
-// Dummy config for Expo JS SDK (works for Email/Password & Firestore)
 const firebaseConfig = {
-  apiKey: "demo",
-  authDomain: "demo",
-  projectId: "demo",
-  storageBucket: "demo",
-  messagingSenderId: "demo",
-  appId: "demo",
+  apiKey: "AIzaSyBXyxYcT3JR5hLiuFXqw2tsQns2rBTGwU0",
+  projectId: "contro-8fcc9",
+  storageBucket: "contro-8fcc9.firebasestorage.app",
+  messagingSenderId: "968767556665",
+  appId: "1:968767556665:android:ce9a62ce82eeb1749711e8",
 };
 
-const app = initializeApp(firebaseConfig);
+// Only initialize once
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-export const auth = getAuth(app);
+// Auth
+export const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(AsyncStorage),
+});
+
+// Firestore
 export const db = getFirestore(app);

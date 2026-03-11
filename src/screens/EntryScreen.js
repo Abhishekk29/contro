@@ -1,15 +1,13 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Image, Linking } from 'react-native';
+import {
+  Image,
+  Linking,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function EntryScreen({ navigation }) {
-  const handleSignup = () => {
-    Alert.alert(
-      "Coming Soon",
-      "Currently in development!!👨🏻‍💻",
-      [{ text: "OK" }]
-    );
-  };
-
   return (
     <View style={styles.container}>
       <Image
@@ -18,25 +16,20 @@ export default function EntryScreen({ navigation }) {
         resizeMode="contain"
       />
 
+      {/* Guest Mode */}
       <TouchableOpacity
-        style={styles.guestButton}
-        onPress={() => navigation.navigate('QuickContro')}
+        style={styles.button}
+        onPress={() => navigation.navigate("QuickContro")}
       >
-        <Text style={styles.buttonText}>Quick Contro (Guest Mode)</Text>
+        <Text style={styles.buttonText}>Create Contro</Text>
       </TouchableOpacity>
 
+      {/* About */}
       <TouchableOpacity
-        style={styles.authButton}
-        onPress={handleSignup}
+        style={styles.button}
+        onPress={() => navigation.navigate("About")}
       >
-       <Text style={styles.buttonText}>Signup / Login</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.aboutButton}
-        onPress={() => navigation.navigate('About')}
-      >
-        <Text style={styles.aboutButtonText}>About Contro</Text>
+        <Text style={styles.buttonText}>About Contro</Text>
       </TouchableOpacity>
 
       {/* Footer */}
@@ -45,7 +38,9 @@ export default function EntryScreen({ navigation }) {
         <View style={styles.links}>
           <Text
             style={styles.link}
-            onPress={() => Linking.openURL("mailto:abhishekanandsharma99@gmail.com")}
+            onPress={() =>
+              Linking.openURL("mailto:abhishekanandsharma99@gmail.com")
+            }
           >
             Gmail
           </Text>
@@ -59,7 +54,9 @@ export default function EntryScreen({ navigation }) {
           <Text style={styles.separator}> | </Text>
           <Text
             style={styles.link}
-            onPress={() => Linking.openURL("https://linkedin.com/in/abhisheksharmaendl")}
+            onPress={() =>
+              Linking.openURL("https://linkedin.com/in/abhisheksharmaendl")
+            }
           >
             LinkedIn
           </Text>
@@ -72,69 +69,23 @@ export default function EntryScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#181717ff',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#181717",
   },
-  logo: {
-    width: 200,
-    height: 200,
-    marginBottom: 50,
-  },
-  guestButton: {
-    backgroundColor: '#0b7f3dff',
+  logo: { width: 200, height: 200, marginBottom: 50 },
+  button: {
+    backgroundColor: "#0b7f3d",
     padding: 15,
     borderRadius: 8,
     marginBottom: 20,
     width: 250,
-    alignItems: 'center',
-  },
-  authButton: {
-    backgroundColor: '#0b7f3dff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 20,
-    width: 250,
-    alignItems: 'center',
-  },
-    aboutButton: {
-    backgroundColor: '#0b7f3dff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 20,
-    width: 250,
-    alignItems: 'center',
-  },
-    aboutButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  footer: {
-    position: "absolute",
-    bottom: 20,
     alignItems: "center",
   },
-  footerText: {
-    color: "#bbb",
-    fontSize: 12,
-    marginBottom: 5,
-  },
-  links: {
-    flexDirection: "row",
-    justifyContent: "center",
-  },
-  link: {
-    color: "#089babff",
-    fontSize: 12,
-    textDecorationLine: "underline",
-  },
-  separator: {
-    color: "#fff",
-    fontSize: 12,
-    marginHorizontal: 3,
-  },
+  buttonText: { color: "#fff", fontWeight: "bold" },
+  footer: { position: "absolute", bottom: 20, alignItems: "center" },
+  footerText: { color: "#bbb", fontSize: 12, marginBottom: 5 },
+  links: { flexDirection: "row", justifyContent: "center" },
+  link: { color: "#089bab", fontSize: 12, textDecorationLine: "underline" },
+  separator: { color: "#fff", fontSize: 12, marginHorizontal: 3 },
 });

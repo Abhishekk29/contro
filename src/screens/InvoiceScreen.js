@@ -1,28 +1,26 @@
 import React from "react";
-import { View, SafeAreaView, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context"; // updated
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { Asset } from "expo-asset";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy"; // legacy import fixes deprecation
 import * as ImageManipulator from "expo-image-manipulator";
 
 export default function InvoiceScreen({ route }) {
   const { controName, totalContro, people } = route.params;
 
-  // Helper: copy logo to cacheDirectory and convert to base64
   const getLogoBase64 = async () => {
     try {
       const asset = Asset.fromModule(require("../../assets/images/logo.png"));
       await asset.downloadAsync();
 
-      // Copy to cacheDirectory
       const cachePath = `${FileSystem.cacheDirectory}logo.png`;
       await FileSystem.copyAsync({
         from: asset.localUri || asset.uri,
         to: cachePath,
       });
 
-      // Resize and get base64
       const resized = await ImageManipulator.manipulateAsync(
         cachePath,
         [{ resize: { width: 300 } }],
@@ -39,14 +37,18 @@ export default function InvoiceScreen({ route }) {
 
   const generateHTML = (controName, totalContro, people = [], logoBase64) => {
     const date = new Date().toLocaleDateString();
-    const rows = people.map((p, i) => `
+    const rows = people
+      .map(
+        (p, i) => `
       <tr style="background-color: ${i % 2 === 0 ? '#1e1e1e' : '#2c2c2c'}">
         <td style="padding:10px; text-align:center;">${i + 1}</td>
         <td style="padding:10px; text-align:left;">${p.name}</td>
         <td style="padding:10px; text-align:left;">₹${Number(p.amount).toFixed(2)}</td>
         <td style="padding:10px; word-break:break-word; max-width:250px;">${p.note || '-'}</td>
       </tr>
-    `).join("");
+    `
+      )
+      .join("");
 
     return `
       <html>
@@ -130,7 +132,7 @@ export default function InvoiceScreen({ route }) {
           <View key={i} style={[styles.row, i % 2 === 0 ? styles.evenRow : styles.oddRow]}>
             <Text style={[styles.cell, { flex: 0.05 }]}>{i + 1}</Text>
             <Text style={[styles.cell, { flex: 0.25 }]}>{p.name}</Text>
-            <Text style={[styles.cellAmount, { flex: 0.25,textAlign:"center" }]}>₹{Number(p.amount).toFixed(2)}</Text>
+            <Text style={[styles.cellAmount, { flex: 0.25, textAlign: "center" }]}>₹{Number(p.amount).toFixed(2)}</Text>
             <Text style={[styles.cell, { flex: 0.55, textAlign: "center" }]}>{p.note || "-"}</Text>
           </View>
         ))}
