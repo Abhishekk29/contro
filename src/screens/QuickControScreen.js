@@ -1,5 +1,7 @@
+// src/screens/QuickControScreen.jsx
 import { useEffect, useRef, useState } from "react";
 import {
+  Alert,
   Animated,
   KeyboardAvoidingView,
   Platform,
@@ -10,82 +12,170 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import {
+  getContro,
+  markCompleted,
+  saveContro,
+} from "../../src/utils/controStorage";
 
-export default function QuickControScreen({ navigation }) {
+// ─── Avatar colors ─────────────────────────────────────────────────────────────
+const AVATAR_COLORS = [
+  { bg: "rgba(124,111,247,0.18)", text: "#a89bf9" },
+  { bg: "rgba(29,158,117,0.18)", text: "#3dcfa0" },
+  { bg: "rgba(212,83,126,0.18)", text: "#e07ba0" },
+  { bg: "rgba(239,159,39,0.18)", text: "#f5b94e" },
+  { bg: "rgba(55,138,221,0.18)", text: "#74b6f0" },
+  { bg: "rgba(99,153,34,0.18)", text: "#93c455" },
+];
+
+function Avatar({ name, index, size = 38 }) {
+  const colors = AVATAR_COLORS[index % AVATAR_COLORS.length];
+  const initials = name?.charAt(0)?.toUpperCase() || "?";
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: colors.bg,
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+      }}
+    >
+      <Text
+        style={{ color: colors.text, fontSize: size * 0.37, fontWeight: "800" }}
+      >
+        {initials}
+      </Text>
+    </View>
+  );
+}
+
+function SectionHeader({ label, actionLabel, onAction }) {
+  return (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionLabel}>{label.toUpperCase()}</Text>
+      {actionLabel && (
+        <TouchableOpacity onPress={onAction} style={styles.addLinkBtn}>
+          <Text style={styles.addLinkText}>+ {actionLabel}</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
+function StyledInput({ icon, label, ...props }) {
+  return (
+    <View style={styles.inputWrapper}>
+      {icon && <Text style={styles.inputIcon}>{icon}</Text>}
+      <View style={{ flex: 1 }}>
+        {label && <Text style={styles.inputLabel}>{label}</Text>}
+        <TextInput
+          style={styles.inputInner}
+          placeholderTextColor="#444"
+          {...props}
+        />
+      </View>
+    </View>
+  );
+}
+
+// ─── Main Screen ───────────────────────────────────────────────────────────────
+export default function QuickControScreen({ navigation, route }) {
+  const controId = route?.params?.controId || null;
+
+  const [currentId, setCurrentId] = useState(controId);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(!!controId);
+
   const [controName, setControName] = useState("");
   const [numPeople, setNumPeople] = useState("");
   const [people, setPeople] = useState([]);
   const [expenses, setExpenses] = useState([
-    { id: 1, title: "", amount: "", participants: [] },
+    { id: 1, title: "", category: "", amount: "", participants: [] },
   ]);
 
   const progressAnim = useRef(new Animated.Value(0)).current;
 
-  // 🔥 Generate People
+  // ─── Load existing contro if resuming ────────────────────────────────────────
   useEffect(() => {
-    if (!numPeople || Number(numPeople) <= 0) {
+    if (!controId) return;
+    (async () => {
+      setIsLoading(true);
+      const saved = await getContro(controId);
+      if (saved) {
+        setCurrentId(saved.id);
+        setControName(saved.controName || "");
+        setNumPeople(String(saved.numPeople || ""));
+        setPeople(saved.people || []);
+        setExpenses(
+          saved.expenses?.length
+            ? saved.expenses
+            : [
+                {
+                  id: 1,
+                  title: "",
+                  category: "",
+                  amount: "",
+                  participants: [],
+                },
+              ],
+        );
+      }
+      setIsLoading(false);
+    })();
+  }, [controId]);
+
+  // ─── Generate people from numPeople ──────────────────────────────────────────
+  useEffect(() => {
+    if (isLoading) return; // don't overwrite loaded people
+    const count = Number(numPeople);
+    if (!numPeople || count <= 0) {
       setPeople([]);
       return;
     }
+    setPeople((prev) => {
+      if (prev.length === count) return prev;
+      return Array.from({ length: count }, (_, i) => ({
+        id: i,
+        name: prev[i]?.name ?? (i === 0 ? "You" : `Person ${i}`),
+        share: prev[i]?.share ?? 0,
+        paid: prev[i]?.paid ?? "",
+      }));
+    });
+  }, [numPeople, isLoading]);
 
-    const count = Number(numPeople);
-
-    const newPeople = Array.from({ length: count }, (_, i) => ({
-      id: i,
-      name: i === 0 ? "You" : `Person ${i}`,
-      share: 0,
-      paid: "",
-    }));
-
-    setPeople(newPeople);
-  }, [numPeople]);
-
-  // 🔥 Calculate total expense
+  // ─── Calculate shares ─────────────────────────────────────────────────────────
   const calculatedTotal = expenses.reduce(
     (sum, e) => sum + (parseFloat(e.amount) || 0),
     0,
   );
 
-  // 🔥 Calculate shares per expense
   const calculateShares = () => {
     const shares = Array(people.length).fill(0);
-
     expenses.forEach((expense) => {
       const amount = parseFloat(expense.amount) || 0;
-      const participants = expense.participants;
-
-      if (participants.length > 0) {
-        const splitAmount = amount / participants.length;
-
-        participants.forEach((personIndex) => {
-          shares[personIndex] += splitAmount;
+      if (expense.participants.length > 0) {
+        const split = amount / expense.participants.length;
+        expense.participants.forEach((idx) => {
+          shares[idx] += split;
         });
       }
     });
-
     return shares;
   };
 
-  // 🔥 Update shares automatically
   useEffect(() => {
     if (people.length === 0) return;
-
     const shares = calculateShares();
-
-    const updatedPeople = people.map((p, i) => ({
-      ...p,
-      share: shares[i],
-    }));
-
-    setPeople(updatedPeople);
+    setPeople((prev) => prev.map((p, i) => ({ ...p, share: shares[i] })));
   }, [expenses]);
 
-  // 🔥 Total share tally
   const totalShare = people.reduce(
     (sum, p) => sum + (parseFloat(p.share) || 0),
     0,
   );
-
   const tallyPercent =
     calculatedTotal > 0
       ? Math.min((totalShare / calculatedTotal) * 100, 100)
@@ -99,107 +189,145 @@ export default function QuickControScreen({ navigation }) {
     }).start();
   }, [tallyPercent]);
 
-  // 🔥 Balance Calculation
+  const diff = Number((calculatedTotal - totalShare).toFixed(2));
+  const barColor = diff === 0 ? "#3dcfa0" : diff > 0 ? "#f5b94e" : "#e05a5a";
+  const tallyLabel =
+    diff === 0
+      ? "Fully covered"
+      : diff > 0
+        ? `₹${diff} remaining`
+        : `₹${Math.abs(diff)} excess`;
+
   const balances = people.map((p) => ({
     name: p.name,
     balance: (parseFloat(p.paid) || 0) - (parseFloat(p.share) || 0),
   }));
 
-  // 🔥 Settlement Engine
   const generateSettlement = () => {
     const receivers = balances
       .filter((p) => p.balance > 0)
       .map((p) => ({ ...p }));
-
     const payers = balances
       .filter((p) => p.balance < 0)
       .map((p) => ({ ...p, balance: Math.abs(p.balance) }));
-
     const settlements = [];
-
-    let i = 0;
-    let j = 0;
-
+    let i = 0,
+      j = 0;
     while (i < payers.length && j < receivers.length) {
-      const payer = payers[i];
-      const receiver = receivers[j];
-
-      const amount = Math.min(payer.balance, receiver.balance);
-
+      const amount = Math.min(payers[i].balance, receivers[j].balance);
       settlements.push({
-        from: payer.name,
-        to: receiver.name,
+        from: payers[i].name,
+        to: receivers[j].name,
         amount: amount.toFixed(2),
       });
-
-      payer.balance -= amount;
-      receiver.balance -= amount;
-
-      if (payer.balance === 0) i++;
-      if (receiver.balance === 0) j++;
+      payers[i].balance -= amount;
+      receivers[j].balance -= amount;
+      if (payers[i].balance === 0) i++;
+      if (receivers[j].balance === 0) j++;
     }
-
     return settlements;
   };
 
   const settlements = generateSettlement();
 
-  // 🔥 Handlers
+  // ─── Handlers ────────────────────────────────────────────────────────────────
   const handlePersonChange = (index, field, value) => {
     const updated = [...people];
     updated[index][field] = value;
     setPeople(updated);
   };
-
   const handleExpenseChange = (index, field, value) => {
     const updated = [...expenses];
     updated[index][field] = value;
     setExpenses(updated);
   };
-
   const toggleParticipant = (expenseIndex, personIndex) => {
     const updated = [...expenses];
-    const participants = updated[expenseIndex].participants;
-
-    if (participants.includes(personIndex)) {
-      updated[expenseIndex].participants = participants.filter(
-        (p) => p !== personIndex,
-      );
-    } else {
-      updated[expenseIndex].participants.push(personIndex);
-    }
-
+    const parts = updated[expenseIndex].participants;
+    updated[expenseIndex].participants = parts.includes(personIndex)
+      ? parts.filter((p) => p !== personIndex)
+      : [...parts, personIndex];
     setExpenses(updated);
   };
-
-  const addExpense = () => {
+  const toggleSelectAll = (expenseIndex) => {
+    const updated = [...expenses];
+    const isAll = updated[expenseIndex].participants.length === people.length;
+    updated[expenseIndex].participants = isAll ? [] : people.map((_, i) => i);
+    setExpenses(updated);
+  };
+  const addExpense = () =>
     setExpenses([
       ...expenses,
-      { id: Date.now(), title: "", amount: "", participants: [] },
+      { id: Date.now(), title: "", category: "", amount: "", participants: [] },
     ]);
-  };
-
   const removeExpense = (index) => {
     const updated = [...expenses];
     updated.splice(index, 1);
     setExpenses(updated);
   };
 
-  const toggleSelectAll = (expenseIndex) => {
-    const updated = [...expenses];
-    const allIndexes = people.map((_, index) => index);
-
-    const isAllSelected =
-      updated[expenseIndex].participants.length === people.length;
-
-    updated[expenseIndex].participants = isAllSelected ? [] : allIndexes;
-
-    setExpenses(updated);
+  // ─── Save & Exit ─────────────────────────────────────────────────────────────
+  const handleSave = async () => {
+    if (!controName.trim()) {
+      Alert.alert(
+        "Name required",
+        "Please give this Contro a name before saving.",
+      );
+      return;
+    }
+    setIsSaving(true);
+    const payload = {
+      id: currentId,
+      controName,
+      numPeople,
+      people,
+      expenses,
+      status: "draft",
+    };
+    const savedId = await saveContro(payload);
+    setCurrentId(savedId);
+    setIsSaving(false);
+    navigation.goBack();
   };
 
-  const diff = Number((calculatedTotal - totalShare).toFixed(2));
+  // ─── Generate PDF (marks completed) ──────────────────────────────────────────
+  const handleGeneratePDF = async () => {
+    // Auto-save before going to invoice
+    if (controName.trim()) {
+      const payload = {
+        id: currentId,
+        controName,
+        numPeople,
+        people,
+        expenses,
+        status: "draft",
+      };
+      const savedId = await saveContro(payload);
+      const idToMark = savedId || currentId;
+      if (idToMark) await markCompleted(idToMark);
+      setCurrentId(idToMark);
+    }
+    navigation.navigate("Invoice", {
+      controName,
+      expenses,
+      people,
+      balances,
+      settlements,
+    });
+  };
 
-  const barColor = diff === 0 ? "#2ecc71" : diff > 0 ? "#f1c40f" : "#e74c3c";
+  if (isLoading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
+        <Text style={{ color: "#555", fontSize: 14 }}>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -209,109 +337,145 @@ export default function QuickControScreen({ navigation }) {
       <ScrollView
         style={styles.container}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: 140 }}
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.header}>Create Contro</Text>
+        {/* ── Top Bar ── */}
+        <View style={styles.topBar}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.iconBtn}
+          >
+            <Text style={styles.iconBtnText}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.screenTitle}>
+            {currentId ? "Edit Contro" : "New Contro"}
+          </Text>
+          <View style={[styles.iconBtn, { opacity: 0 }]} />
+        </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Contro Name"
-          placeholderTextColor="#aaa"
+        {/* ── Contro Name ── */}
+        <StyledInput
+          label="Contro Name"
+          placeholder="e.g. Goa Trip"
           value={controName}
           onChangeText={setControName}
         />
-
-        {/* Expense Section */}
-        <Text style={styles.sectionTitle}>Expense Breakdown</Text>
-
-        {expenses.map((exp, i) => (
-          <View key={exp.id} style={styles.expenseCard}>
-            <TextInput
-              style={styles.input}
-              placeholder="Expense Title"
-              placeholderTextColor="#aaa"
-              value={exp.title}
-              onChangeText={(val) => handleExpenseChange(i, "title", val)}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Amount (₹)"
-              placeholderTextColor="#aaa"
-              keyboardType="numeric"
-              value={exp.amount}
-              onChangeText={(val) => handleExpenseChange(i, "amount", val)}
-            />
-
-            <Text style={styles.participantLabel}>Select Participants</Text>
-
-            {/* Select All Button */}
-            <TouchableOpacity
-              onPress={() => toggleSelectAll(i)}
-              style={styles.selectAllBtn}
-            >
-              <Text style={{ color: "#fff", fontWeight: "600" }}>
-                {exp.participants.length === people.length
-                  ? "Unselect All"
-                  : "Select All"}
-              </Text>
-            </TouchableOpacity>
-
-            <View style={styles.participantContainer}>
-              {people.map((person, personIndex) => (
-                <TouchableOpacity
-                  key={personIndex}
-                  onPress={() => toggleParticipant(i, personIndex)}
-                  style={[
-                    styles.participantTag,
-                    exp.participants.includes(personIndex) &&
-                      styles.selectedParticipant,
-                  ]}
-                >
-                  <Text style={{ color: "#fff", fontSize: 12 }}>
-                    {person.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <TouchableOpacity onPress={() => removeExpense(i)}>
-              <Text style={{ color: "red", marginTop: 6 }}>Remove Expense</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
-
-        <TouchableOpacity style={styles.addBtn} onPress={addExpense}>
-          <Text style={{ color: "#fff" }}>+ Add Expense</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.totalText}>
-          Total: ₹{calculatedTotal.toFixed(2)}
-        </Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Number of People"
-          placeholderTextColor="#aaa"
+        <StyledInput
+          label="Number of People"
+          placeholder="e.g. 3"
           keyboardType="numeric"
           value={numPeople}
           onChangeText={setNumPeople}
         />
 
-        {/* Tally */}
-        {calculatedTotal > 0 && (
-          <View style={styles.tallyContainer}>
-            <Text style={diff === 0 ? styles.tallyOk : styles.tallyBad}>
-              {diff === 0
-                ? "Balanced"
-                : diff > 0
-                  ? `₹${diff} remaining`
-                  : `₹${Math.abs(diff)} excess`}
-            </Text>
+        {/* ── Expenses ── */}
+        <SectionHeader
+          label="Expenses"
+          actionLabel="Add Expense"
+          onAction={addExpense}
+        />
 
-            <View style={styles.tallyBar}>
+        {expenses.map((exp, i) => (
+          <View key={exp.id} style={styles.expenseCard}>
+            <View style={styles.expenseTopRow}>
+              <TextInput
+                style={styles.expenseTitleInput}
+                placeholder="Expense name"
+                placeholderTextColor="#444"
+                value={exp.title}
+                onChangeText={(val) => handleExpenseChange(i, "title", val)}
+              />
+              <View style={styles.amountInputWrapper}>
+                <Text style={styles.currencySymbol}>₹</Text>
+                <TextInput
+                  style={styles.amountInput}
+                  placeholder="0"
+                  placeholderTextColor="#444"
+                  keyboardType="numeric"
+                  value={exp.amount}
+                  onChangeText={(val) => handleExpenseChange(i, "amount", val)}
+                />
+              </View>
+            </View>
+
+            <TextInput
+              style={styles.categoryInput}
+              placeholder="Category (e.g. Food, Hotel)"
+              placeholderTextColor="#3a3a4e"
+              value={exp.category}
+              onChangeText={(val) => handleExpenseChange(i, "category", val)}
+            />
+
+            <View style={styles.cardDivider} />
+
+            <View style={styles.participantsHeader}>
+              <Text style={styles.participantsLabel}>SPLIT BETWEEN</Text>
+              {people.length > 0 && (
+                <TouchableOpacity onPress={() => toggleSelectAll(i)}>
+                  <Text style={styles.selectAllText}>
+                    {exp.participants.length === people.length
+                      ? "Unselect all"
+                      : "Select all"}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <View style={styles.participantRow}>
+              {people.map((person, personIndex) => {
+                const isActive = exp.participants.includes(personIndex);
+                return (
+                  <TouchableOpacity
+                    key={personIndex}
+                    onPress={() => toggleParticipant(i, personIndex)}
+                    style={[styles.pTag, isActive && styles.pTagActive]}
+                  >
+                    <Text
+                      style={[
+                        styles.pTagText,
+                        isActive && styles.pTagTextActive,
+                      ]}
+                    >
+                      {person.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <TouchableOpacity
+              onPress={() => removeExpense(i)}
+              style={styles.removeBtn}
+            >
+              <Text style={styles.removeBtnText}>Remove expense</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+
+        {/* ── Total Chip ── */}
+        {calculatedTotal > 0 && (
+          <View style={styles.totalChip}>
+            <Text style={styles.totalChipText}>
+              ₹{calculatedTotal.toFixed(2)} across {expenses.length} expense
+              {expenses.length !== 1 ? "s" : ""}
+            </Text>
+          </View>
+        )}
+
+        {/* ── Tally Bar ── */}
+        {calculatedTotal > 0 && (
+          <View style={styles.tallyBox}>
+            <View style={styles.tallyTopRow}>
+              <Text style={styles.tallyLabel}>Split coverage</Text>
+              <Text style={[styles.tallyStatus, { color: barColor }]}>
+                {tallyLabel}
+              </Text>
+            </View>
+            <View style={styles.tallyBarBg}>
               <Animated.View
                 style={[
-                  styles.tallyProgress,
+                  styles.tallyBarFill,
                   {
                     backgroundColor: barColor,
                     width: progressAnim.interpolate({
@@ -322,241 +486,446 @@ export default function QuickControScreen({ navigation }) {
                 ]}
               />
             </View>
+            <View style={styles.tallyNums}>
+              <Text style={styles.tallyNum}>
+                Assigned{" "}
+                <Text style={styles.tallyNumVal}>₹{totalShare.toFixed(2)}</Text>
+              </Text>
+              <Text style={styles.tallyNum}>
+                Total{" "}
+                <Text style={styles.tallyNumVal}>
+                  ₹{calculatedTotal.toFixed(2)}
+                </Text>
+              </Text>
+            </View>
           </View>
         )}
 
-        {/* Paid Input */}
-        {people.map((p, i) => (
-          <View key={p.id} style={styles.card}>
-            {/* Editable Name */}
-            <TextInput
-              style={styles.cardInput}
-              value={p.name}
-              onChangeText={(val) => handlePersonChange(i, "name", val)}
-              placeholder="Person Name"
-              placeholderTextColor="#aaa"
-            />
+        {/* ── People ── */}
+        {people.length > 0 && (
+          <>
+            <SectionHeader label="People" />
+            {people.map((p, i) => (
+              <View key={p.id} style={styles.personCard}>
+                <Avatar name={p.name} index={i} size={40} />
+                <View style={styles.personInfo}>
+                  <TextInput
+                    style={styles.personNameInput}
+                    value={p.name}
+                    onChangeText={(val) => handlePersonChange(i, "name", val)}
+                    placeholder="Name"
+                    placeholderTextColor="#444"
+                  />
+                  <Text style={styles.personShare}>
+                    Share: ₹{p.share.toFixed(2)}
+                  </Text>
+                </View>
+                <View style={styles.personPaidBlock}>
+                  <Text style={styles.personPaidLabel}>Paid</Text>
+                  <View style={styles.paidInputRow}>
+                    <Text style={styles.paidCurrency}>₹</Text>
+                    <TextInput
+                      style={styles.paidInput}
+                      placeholder="0"
+                      placeholderTextColor="#3a3a4e"
+                      keyboardType="numeric"
+                      value={p.paid?.toString()}
+                      onChangeText={(val) => handlePersonChange(i, "paid", val)}
+                    />
+                  </View>
+                </View>
+              </View>
+            ))}
+          </>
+        )}
 
-            {/* Auto Calculated Share */}
-            <Text style={{ color: "#bbb", marginBottom: 6 }}>
-              Share: ₹{p.share.toFixed(2)}
-            </Text>
-
-            {/* Paid Input */}
-            <TextInput
-              style={styles.cardInput}
-              placeholder="Paid (₹)"
-              placeholderTextColor="#aaa"
-              keyboardType="numeric"
-              value={p.paid?.toString()}
-              onChangeText={(val) => handlePersonChange(i, "paid", val)}
-            />
-          </View>
-        ))}
-
-        {/* Settlement */}
+        {/* ── Settlement ── */}
         {settlements.length > 0 && (
-          <View style={{ marginTop: 20 }}>
-            <Text style={styles.sectionTitle}>Who Pays Whom</Text>
-
-            {settlements.map((s, index) => (
-              <Text
-                key={index}
-                style={{
-                  color: "#00cec9",
-                  marginBottom: 6,
-                }}
+          <View style={styles.settlementCard}>
+            <View style={styles.settlementHeader}>
+              <View style={styles.settleDot} />
+              <Text style={styles.settleHeaderLabel}>WHO PAYS WHOM</Text>
+            </View>
+            {settlements.map((s, idx) => (
+              <View
+                key={idx}
+                style={[
+                  styles.settleRow,
+                  idx < settlements.length - 1 && styles.settleRowBorder,
+                ]}
               >
-                {s.from} → Pay ₹{s.amount} to {s.to}
-              </Text>
+                <View style={styles.settleAvatar}>
+                  <Text style={styles.settleAvatarText}>
+                    {s.from.charAt(0)}
+                  </Text>
+                </View>
+                <Text style={styles.settleText}>
+                  <Text style={styles.settleName}>{s.from}</Text>
+                  {" pays "}
+                  <Text style={styles.settleName}>{s.to}</Text>
+                </Text>
+                <Text style={styles.settleAmount}>₹{s.amount}</Text>
+              </View>
             ))}
           </View>
         )}
 
-        <TouchableOpacity
-          style={styles.submitBtn}
-          onPress={() =>
-            navigation.navigate("Invoice", {
-              controName,
-              expenses,
-              people,
-              balances,
-              settlements,
-            })
-          }
-        >
-          <Text style={styles.submitText}>Generate PDF</Text>
-        </TouchableOpacity>
+        {/* ── Action Buttons ── */}
+        <View style={styles.actionRow}>
+          {/* Save & Exit */}
+          <TouchableOpacity
+            style={styles.saveBtn}
+            onPress={handleSave}
+            activeOpacity={0.85}
+            disabled={isSaving}
+          >
+            <Text style={styles.saveBtnText}>
+              {isSaving ? "Saving…" : "Save & Exit"}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Generate PDF */}
+          <TouchableOpacity
+            style={styles.ctaBtn}
+            onPress={handleGeneratePDF}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.ctaBtnText}>Generate PDF</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
+// ─── Styles ────────────────────────────────────────────────────────────────────
+const BG = "#0b0b0f";
+const CARD = "#131318";
+const BORDER = "#1f1f2b";
+const PURPLE = "#7c6ff7";
+const GREEN = "#3dcfa0";
+const MUTED = "#555";
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f0f12",
-    paddingHorizontal: 20,
-    paddingTop: 30,
+    backgroundColor: BG,
+    paddingHorizontal: 18,
+    paddingTop: 16,
   },
 
-  header: {
-    fontSize: 26,
-    fontWeight: "700",
-    color: "#ffffff",
-    marginBottom: 25,
-    letterSpacing: 0.5,
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    marginBottom: 8,
   },
-
-  sectionTitle: {
-    color: "#ffffff",
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#1c1c26",
+    borderWidth: 0.5,
+    borderColor: "#2c2c3a",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconBtnText: { color: "#aaa", fontSize: 18 },
+  screenTitle: {
     fontSize: 17,
-    fontWeight: "600",
-    marginBottom: 12,
-    marginTop: 25,
+    fontWeight: "700",
+    color: "#fff",
+    letterSpacing: -0.2,
   },
 
-  input: {
-    backgroundColor: "#1c1c22",
-    color: "#ffffff",
-    paddingVertical: 14,
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#141419",
+    borderWidth: 0.5,
+    borderColor: "#252530",
+    borderRadius: 14,
     paddingHorizontal: 14,
-    borderRadius: 12,
+    paddingVertical: 12,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#2a2a32",
+    gap: 10,
   },
+  inputIcon: { fontSize: 16 },
+  inputLabel: { fontSize: 11, color: MUTED, marginBottom: 2 },
+  inputInner: { color: "#fff", fontSize: 15, fontWeight: "500", padding: 0 },
+
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 22,
+    marginBottom: 12,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: MUTED,
+    letterSpacing: 0.9,
+  },
+  addLinkBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    backgroundColor: "rgba(124,111,247,0.12)",
+    borderRadius: 20,
+    borderWidth: 0.5,
+    borderColor: "rgba(124,111,247,0.3)",
+  },
+  addLinkText: { fontSize: 12, color: PURPLE, fontWeight: "700" },
 
   expenseCard: {
-    backgroundColor: "#15151b",
+    backgroundColor: CARD,
+    borderWidth: 0.5,
+    borderColor: BORDER,
+    borderRadius: 18,
     padding: 16,
-    borderRadius: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#23232b",
+    marginBottom: 12,
   },
+  expenseTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 10,
+  },
+  expenseTitleInput: {
+    flex: 1,
+    color: "#eee",
+    fontSize: 15,
+    fontWeight: "600",
+    borderBottomWidth: 0.5,
+    borderBottomColor: BORDER,
+    paddingBottom: 6,
+    padding: 0,
+  },
+  amountInputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#0f0f14",
+    borderWidth: 0.5,
+    borderColor: BORDER,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  currencySymbol: {
+    color: PURPLE,
+    fontWeight: "700",
+    fontSize: 15,
+    marginRight: 2,
+  },
+  amountInput: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+    minWidth: 60,
+    padding: 0,
+  },
+  categoryInput: { color: "#666", fontSize: 12, padding: 0, marginBottom: 10 },
+  cardDivider: { height: 0.5, backgroundColor: BORDER, marginBottom: 12 },
 
-  participantLabel: {
-    color: "#8f8f9e",
-    fontSize: 13,
+  participantsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 8,
-    marginTop: 6,
   },
-
-  selectAllBtn: {
-    alignSelf: "flex-start",
-    backgroundColor: "#262633",
+  participantsLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#3a3a4e",
+    letterSpacing: 0.8,
+  },
+  selectAllText: { fontSize: 12, color: PURPLE, fontWeight: "600" },
+  participantRow: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
+  pTag: {
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderRadius: 20,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#3a3a4a",
+    backgroundColor: "#1c1c26",
+    borderWidth: 0.5,
+    borderColor: "#28283a",
   },
-
-  participantContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  pTagActive: {
+    backgroundColor: "rgba(124,111,247,0.15)",
+    borderColor: "rgba(124,111,247,0.4)",
   },
+  pTagText: { fontSize: 13, color: "#555", fontWeight: "500" },
+  pTagTextActive: { color: "#a89bf9" },
+  removeBtn: { marginTop: 14, alignSelf: "flex-start" },
+  removeBtnText: { color: "#b71f1f", fontSize: 12 },
 
-  participantTag: {
-    paddingVertical: 8,
+  totalChip: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(124,111,247,0.08)",
+    borderWidth: 0.5,
+    borderColor: "rgba(124,111,247,0.22)",
+    borderRadius: 99,
+    paddingVertical: 6,
     paddingHorizontal: 14,
-    marginRight: 8,
-    marginBottom: 8,
-    borderRadius: 20,
-    backgroundColor: "#202028",
-    borderWidth: 1,
-    borderColor: "#2c2c36",
+    marginBottom: 12,
+    marginTop: 4,
   },
+  totalChipText: { fontSize: 13, color: "#a89bf9", fontWeight: "600" },
 
-  selectedParticipant: {
-    backgroundColor: "#6c5ce7",
-    borderColor: "#6c5ce7",
-  },
-
-  addBtn: {
-    backgroundColor: "#22222a",
-    paddingVertical: 14,
-    borderRadius: 14,
-    alignItems: "center",
-    marginTop: 5,
-    borderWidth: 1,
-    borderColor: "#33333d",
-  },
-
-  totalText: {
-    color: "#6c5ce7",
-    fontWeight: "600",
-    fontSize: 16,
-    marginTop: 10,
-  },
-
-  card: {
-    backgroundColor: "#15151b",
-    padding: 16,
+  tallyBox: {
+    backgroundColor: CARD,
+    borderWidth: 0.5,
+    borderColor: BORDER,
     borderRadius: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#23232b",
+    padding: 16,
+    marginBottom: 4,
   },
-
-  cardInput: {
-    backgroundColor: "#1c1c22",
-    color: "#ffffff",
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: "#2a2a32",
+  tallyTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
   },
-
-  tallyContainer: {
-    marginTop: 20,
-    marginBottom: 20,
-  },
-
-  tallyOk: {
-    color: "#2ecc71",
-    fontWeight: "600",
-    marginBottom: 6,
-  },
-
-  tallyBad: {
-    color: "#e74c3c",
-    fontWeight: "600",
-    marginBottom: 6,
-  },
-
-  tallyBar: {
-    height: 10,
-    backgroundColor: "#1c1c22",
-    borderRadius: 20,
+  tallyLabel: { fontSize: 13, color: MUTED },
+  tallyStatus: { fontSize: 13, fontWeight: "700" },
+  tallyBarBg: {
+    height: 6,
+    backgroundColor: "#1c1c26",
+    borderRadius: 99,
     overflow: "hidden",
   },
-
-  tallyProgress: {
-    height: "100%",
-    borderRadius: 20,
+  tallyBarFill: { height: "100%", borderRadius: 99 },
+  tallyNums: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 8,
   },
+  tallyNum: { fontSize: 11, color: "#3a3a4e" },
+  tallyNumVal: { color: "#666", fontWeight: "600" },
 
-  submitBtn: {
-    backgroundColor: "#6c5ce7",
-    paddingVertical: 16,
-    borderRadius: 16,
+  personCard: {
+    flexDirection: "row",
     alignItems: "center",
-    marginTop: 30,
-    shadowColor: "#6c5ce7",
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 6,
+    backgroundColor: CARD,
+    borderWidth: 0.5,
+    borderColor: BORDER,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 10,
+    gap: 12,
+  },
+  personInfo: { flex: 1 },
+  personNameInput: {
+    color: "#ddd",
+    fontSize: 14,
+    fontWeight: "600",
+    padding: 0,
+    marginBottom: 3,
+  },
+  personShare: { fontSize: 12, color: MUTED },
+  personPaidBlock: { alignItems: "flex-end" },
+  personPaidLabel: { fontSize: 11, color: "#3a3a4e", marginBottom: 2 },
+  paidInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#0f0f14",
+    borderWidth: 0.5,
+    borderColor: BORDER,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  paidCurrency: {
+    color: PURPLE,
+    fontWeight: "700",
+    fontSize: 14,
+    marginRight: 2,
+  },
+  paidInput: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
+    minWidth: 56,
+    padding: 0,
   },
 
-  submitText: {
-    color: "#ffffff",
+  settlementCard: {
+    backgroundColor: "#0c1812",
+    borderWidth: 0.5,
+    borderColor: "#1a2e22",
+    borderRadius: 16,
+    overflow: "hidden",
+    marginTop: 16,
+  },
+  settlementHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#1a2e22",
+  },
+  settleDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: GREEN },
+  settleHeaderLabel: {
+    fontSize: 10,
     fontWeight: "700",
-    fontSize: 16,
-    letterSpacing: 0.5,
+    color: GREEN,
+    letterSpacing: 0.7,
+  },
+  settleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  settleRowBorder: { borderBottomWidth: 0.5, borderBottomColor: "#1a2e22" },
+  settleAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "rgba(29,158,117,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  settleAvatarText: { color: GREEN, fontSize: 12, fontWeight: "800" },
+  settleText: { flex: 1, fontSize: 13, color: "#888" },
+  settleName: { color: "#ddd", fontWeight: "700" },
+  settleAmount: { fontSize: 15, fontWeight: "800", color: GREEN },
+
+  // ── Action buttons row ──
+  actionRow: { flexDirection: "row", gap: 10, marginTop: 24 },
+  saveBtn: {
+    flex: 1,
+    backgroundColor: "rgba(124,111,247,0.10)",
+    borderWidth: 0.5,
+    borderColor: "rgba(124,111,247,0.25)",
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  saveBtnText: { fontSize: 14, fontWeight: "700", color: "#a89bf9" },
+  ctaBtn: {
+    flex: 1,
+    backgroundColor: PURPLE,
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    ...(Platform.OS === "ios"
+      ? {
+          shadowColor: PURPLE,
+          shadowOpacity: 0.4,
+          shadowRadius: 14,
+          shadowOffset: { width: 0, height: 6 },
+        }
+      : { elevation: 8 }),
+  },
+  ctaBtnText: {
+    color: "#fff",
+    fontWeight: "800",
+    fontSize: 15,
+    letterSpacing: 0.4,
   },
 });

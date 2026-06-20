@@ -43,8 +43,6 @@
         "projectId": "02ac3705-a27a-4eb7-8fda-c27cb9893d53"
       }
     },
-    "plugins": [
-      "expo-asset"
-    ]
+    "plugins": ["expo-asset", "expo-font", "expo-web-browser"]
   }
 }

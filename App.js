@@ -1,35 +1,37 @@
 // App.js
-import { DefaultTheme, NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer } from "@react-navigation/native";
 import {
-  CardStyleInterpolators,
   createStackNavigator,
   TransitionPresets,
 } from "@react-navigation/stack";
 import * as SplashScreenExpo from "expo-splash-screen";
 import { useEffect } from "react";
+import { StatusBar } from "react-native";
 import { enableScreens } from "react-native-screens";
 
 import AboutScreen from "./src/screens/AboutScreen";
 import EntryScreen from "./src/screens/EntryScreen";
 import InvoiceScreen from "./src/screens/InvoiceScreen";
 import QuickControScreen from "./src/screens/QuickControScreen";
+import SavedControScreen from "./src/screens/SavedControScreen";
 import SplashScreen from "./src/screens/SplashScreen";
 
-// Prevent white flash
-enableScreens(false);
+enableScreens(true);
 
 const Stack = createStackNavigator();
 
-// Custom Dark Theme
-const MyTheme = {
-  ...DefaultTheme,
+const DarkTheme = {
+  dark: true,
   colors: {
-    ...DefaultTheme.colors,
-    background: "#0f0f12",
+    background: "#0b0b0f",
+    card: "#0b0b0f",
+    text: "#ffffff",
+    border: "#1f1f2b",
+    primary: "#7c6ff7",
+    notification: "#7c6ff7",
   },
 };
 
-// Prevent native splash from auto hiding
 SplashScreenExpo.preventAutoHideAsync();
 
 export default function App() {
@@ -41,23 +43,41 @@ export default function App() {
   }, []);
 
   return (
-    <NavigationContainer theme={MyTheme}>
-      <Stack.Navigator
-        initialRouteName="Splash"
-        screenOptions={{
-          headerShown: false,
-          gestureEnabled: true,
-          cardStyle: { backgroundColor: "#0f0f12" },
-          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
-          ...TransitionPresets.SlideFromRightIOS,
-        }}
-      >
-        <Stack.Screen name="Splash" component={SplashScreen} />
-        <Stack.Screen name="Entry" component={EntryScreen} />
-        <Stack.Screen name="QuickContro" component={QuickControScreen} />
-        <Stack.Screen name="Invoice" component={InvoiceScreen} />
-        <Stack.Screen name="About" component={AboutScreen} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <>
+      <StatusBar barStyle="light-content" backgroundColor="#0b0b0f" />
+      <NavigationContainer theme={DarkTheme}>
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+            detachPreviousScreen: false,
+            cardOverlayEnabled: false,
+            ...TransitionPresets.SlideFromRightIOS,
+            cardStyleInterpolator: ({ current, layouts }) => ({
+              cardStyle: {
+                backgroundColor: "#0b0b0f",
+                transform: [
+                  {
+                    translateX: current.progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [layouts.screen.width, 0],
+                    }),
+                  },
+                ],
+              },
+              overlayStyle: {
+                opacity: 0,
+              },
+            }),
+          }}
+        >
+          <Stack.Screen name="Splash" component={SplashScreen} />
+          <Stack.Screen name="Entry" component={EntryScreen} />
+          <Stack.Screen name="QuickContro" component={QuickControScreen} />
+          <Stack.Screen name="SavedContros" component={SavedControScreen} />
+          <Stack.Screen name="Invoice" component={InvoiceScreen} />
+          <Stack.Screen name="About" component={AboutScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </>
   );
 }
