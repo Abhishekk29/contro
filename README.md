@@ -20,7 +20,7 @@ A privacy-first expense splitting app built with React Native and Expo.
 
 <br/>
 
-<img src="./assets/demo/contro-demo.gif" width="280" alt="Contro app demo — creating a Contro, adding expenses, and viewing the settlement plan" />
+<img src="./assets/demo/contro-demo.gif" width="280" alt="Contro app demo - creating a Contro, adding expenses, and viewing the settlement plan" />
 
 </div>
 
@@ -34,7 +34,7 @@ Most expense-splitting apps make you sign up, log in, and add friends before you
 - **No backend.** Everything runs and saves locally on your device.
 - **No fuss.** Add expenses as they happen, save your progress, come back to it whenever.
 
-> **Contro = Contribution** — built for the moment a trip, dinner, or shared bill needs to be split fairly.
+> **Contro = Contribution** - built for the moment a trip, dinner, or shared bill needs to be split fairly.
 
 ---
 
@@ -52,13 +52,13 @@ Most expense-splitting apps make you sign up, log in, and add friends before you
 
 |                                          |                                                                                                                     |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| 🧮 **Smart settlement engine**           | Calculates the minimum number of payments needed to settle the whole group — no more "who owes who what" confusion. |
+| 🧮 **Smart settlement engine**           | Calculates the minimum number of payments needed to settle the whole group - no more "who owes who what" confusion. |
 | 💾 **Save & resume anytime**             | A Contro isn't a one-shot form. Save mid-trip and keep adding expenses as they happen.                              |
-| 📁 **Saved Contros, organized**          | All your Contros — in progress and completed — live in one dedicated screen.                                        |
+| 📁 **Saved Contros, organized**          | All your Contros - in progress and completed - live in one dedicated screen.                                        |
 | 📊 **Live balance tracking**             | A running coverage bar shows exactly how much of the total is assigned as you add expenses.                         |
-| 🧾 **Per-expense participant selection** | Not everyone splits every cost — pick exactly who's in on each expense.                                             |
+| 🧾 **Per-expense participant selection** | Not everyone splits every cost - pick exactly who's in on each expense.                                             |
 | 📄 **PDF invoice export**                | Generate a clean, structured expense report and share it with the whole group.                                      |
-| 🔒 **Fully on-device**                   | Saved data never leaves your phone — no cloud, no tracking, no third-party servers.                                 |
+| 🔒 **Fully on-device**                   | Saved data never leaves your phone - no cloud, no tracking, no third-party servers.                                 |
 
 ---
 
@@ -113,7 +113,7 @@ Most expense-splitting apps make you sign up, log in, and add friends before you
 ## How it works
 
 1. **Name your Contro** and add how many people are splitting
-2. **Add expenses** as they happen — hotel, food, cabs, anything
+2. **Add expenses** as they happen - hotel, food, cabs, anything
 3. **Pick who's in** on each expense; shares recalculate instantly
 4. **Enter what each person actually paid**
 5. **The settlement engine** works out exactly who owes whom
@@ -129,7 +129,7 @@ Most expense-splitting apps make you sign up, log in, and add friends before you
 - **PDF Generation:** `expo-print` + `expo-sharing`
 - **Image Handling:** `expo-image-manipulator`, `expo-asset`
 
-No backend, no database server, no authentication layer — all data persists locally via AsyncStorage.
+No backend, no database server, no authentication layer - all data persists locally via AsyncStorage.
 
 ---
 
@@ -195,7 +195,7 @@ contro/
 Contro is intentionally **local-first**:
 
 - Each Contro is stored as a JSON object in AsyncStorage, keyed under a single list
-- No network calls are made for core functionality — splitting, saving, and PDF generation all work offline
+- No network calls are made for core functionality - splitting, saving, and PDF generation all work offline
 - This tradeoff (no cross-device sync) was a deliberate design choice to keep the app instant-on with zero friction, in exchange for simplicity and privacy
 
 ---
