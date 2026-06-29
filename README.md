@@ -1,50 +1,171 @@
-# Welcome to your Expo app 👋
+<div align="center">
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+<img src="./assets/images/logo.png" width="150" alt="Contro logo" />
 
-## Get started
+# Contro
 
-1. Install dependencies
+**Split group expenses. Settle faster. No accounts, no signups.**
 
-   ```bash
-   npm install
-   ```
+Contro is a local-first React Native app that tracks shared expenses for trips, events, or roommates — and tells you exactly who owes whom, with the minimum number of payments possible.
 
-2. Start the app
+[![React Native](https://img.shields.io/badge/React%20Native-Expo-7c6ff7?style=flat-square)](https://expo.dev)
+[![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS-555?style=flat-square)]()
+[![No Backend](https://img.shields.io/badge/backend-none%20needed-3dcfa0?style=flat-square)]()
 
-   ```bash
-   npx expo start
-   ```
+<br/>
 
-In the output, you'll find options to open the app in a
+<img src="./assets/demo/contro-demo.gif" width="280" alt="Contro app demo — creating a Contro, adding expenses, and viewing the settlement plan" />
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+</div>
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+---
 
-## Get a fresh project
+## Why Contro
 
-When you're ready, run:
+Most expense-splitting apps make you sign up, log in, and add friends before you can split a single bill. Contro skips all of that.
+
+- **No accounts.** Open the app and start splitting.
+- **No backend.** Everything runs and saves locally on your device.
+- **No fuss.** Add expenses as they happen, save your progress, come back to it whenever.
+
+> **Contro = Contribution** — built for the moment a trip, dinner, or shared bill needs to be split fairly.
+
+---
+
+## Features
+
+|                                          |                                                                                                                     |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| 🧮 **Smart settlement engine**           | Calculates the minimum number of payments needed to settle the whole group — no more "who owes who what" confusion. |
+| 💾 **Save & resume anytime**             | A Contro isn't a one-shot form. Save mid-trip and keep adding expenses as they happen.                              |
+| 📁 **Saved Contros, organized**          | All your Contros — in progress and completed — live in one dedicated screen.                                        |
+| 📊 **Live balance tracking**             | A running coverage bar shows exactly how much of the total is assigned as you add expenses.                         |
+| 🧾 **Per-expense participant selection** | Not everyone splits every cost — pick exactly who's in on each expense.                                             |
+| 📄 **PDF invoice export**                | Generate a clean, structured expense report and share it with the whole group.                                      |
+| 🔒 **Fully on-device**                   | Saved data never leaves your phone — no cloud, no tracking, no third-party servers.                                 |
+
+---
+
+## Screenshots
+
+<div align="center">
+<!-- Replace these with actual screenshots from /assets -->
+<img src="./assets/screenshots/entry.jpeg" width="200" alt="Entry screen" />
+<img src="./assets/screenshots/quick-contro.jpeg" width="200" alt="Create Contro screen" />
+<img src="./assets/screenshots/saved-contros.jpeg" width="200" alt="Saved Contros screen" />
+<img src="./assets/screenshots/invoice.jpeg" width="200" alt="Invoice screen" />
+</div>
+
+---
+
+## How it works
+
+1. **Name your Contro** and add how many people are splitting
+2. **Add expenses** as they happen — hotel, food, cabs, anything
+3. **Pick who's in** on each expense; shares recalculate instantly
+4. **Enter what each person actually paid**
+5. **The settlement engine** works out exactly who owes whom
+6. **Export a PDF** and share it with the group
+
+---
+
+## Tech Stack
+
+- **Framework:** React Native (Expo, managed workflow)
+- **Navigation:** React Navigation (Stack Navigator)
+- **Local Storage:** `@react-native-async-storage/async-storage`
+- **PDF Generation:** `expo-print` + `expo-sharing`
+- **Image Handling:** `expo-image-manipulator`, `expo-asset`
+
+No backend, no database server, no authentication layer — all data persists locally via AsyncStorage.
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (LTS)
+- Expo CLI / EAS CLI
+- Expo Go app (for quick testing) or an Android/iOS emulator
+
+### Installation
 
 ```bash
-npm run reset-project
+git clone https://github.com/Abhishekk29/contro.git
+cd contro
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Scan the QR code with the **Expo Go** app, or run on an emulator:
 
-## Learn more
+```bash
+npx expo start --android
+npx expo start --ios
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+### Building an APK
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npm install -g eas-cli
+eas login
+eas build --platform android --profile preview
+```
 
-## Join the community
+---
 
-Join our community of developers creating universal apps.
+## Project Structure
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```
+contro/
+├── src/
+│   ├── screens/
+│   │   ├── EntryScreen.js          # Landing screen
+│   │   ├── QuickControScreen.js    # Create / edit a Contro
+│   │   ├── SavedControsScreen.js   # List of saved Contros
+│   │   ├── InvoiceScreen.js        # Summary + PDF export
+│   │   ├── AboutScreen.js          # App info
+│   │   └── SplashScreen.js
+│   └── utils/
+│       └── controStorage.js        # AsyncStorage read/write layer
+├── assets/
+├── App.js                          # Navigation entry point
+└── app.json
+```
+
+---
+
+## Architecture Notes
+
+Contro is intentionally **local-first**:
+
+- Each Contro is stored as a JSON object in AsyncStorage, keyed under a single list
+- No network calls are made for core functionality — splitting, saving, and PDF generation all work offline
+- This tradeoff (no cross-device sync) was a deliberate design choice to keep the app instant-on with zero friction, in exchange for simplicity and privacy
+
+---
+
+## Roadmap
+
+- [ ] Export/import Contros as backup files
+- [ ] Expense categories with spend breakdown charts
+- [ ] Custom (non-equal) split amounts per person
+- [ ] Multi-currency support
+
+---
+
+## Author
+
+**Abhishek Sharma**
+React Native Developer
+
+[![Gmail](https://img.shields.io/badge/Gmail-abhishekanandsharma99%40gmail.com-7c6ff7?style=flat-square&logo=gmail&logoColor=white)](mailto:abhishekanandsharma99@gmail.com)
+[![GitHub](https://img.shields.io/badge/GitHub-Abhishekk29-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Abhishekk29)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-abhisheksharmaendl-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://linkedin.com/in/abhisheksharmaendl)
+
+---
+
+<div align="center">
+<sub>Built with React Native & Expo</sub>
+</div>
