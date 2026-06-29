@@ -1,16 +1,23 @@
+````md
 <div align="center">
 
 <img src="./assets/images/logo.png" width="150" alt="Contro logo" />
 
 # Contro
 
-**Split group expenses. Settle faster. No accounts, no signups.**
+**Split group expenses. Settle faster. No accounts, no signups, no hassle.**
 
-Contro is a local-first React Native app that tracks shared expenses for trips, events, or roommates — and tells you exactly who owes whom, with the minimum number of payments possible.
+<p align="center">
+A privacy-first expense splitting app built with React Native and Expo.
+</p>
 
 [![React Native](https://img.shields.io/badge/React%20Native-Expo-7c6ff7?style=flat-square)](https://expo.dev)
 [![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS-555?style=flat-square)]()
 [![No Backend](https://img.shields.io/badge/backend-none%20needed-3dcfa0?style=flat-square)]()
+
+<p align="center">
+✨ Offline First • 🔒 Privacy Focused • 📄 PDF Export • ⚡ Zero Signup
+</p>
 
 <br/>
 
@@ -32,6 +39,16 @@ Most expense-splitting apps make you sign up, log in, and add friends before you
 
 ---
 
+## ✨ Highlights
+
+- 🚀 Zero onboarding – start splitting in seconds
+- 🔒 100% local-first and privacy-friendly
+- 💸 Optimized debt settlement algorithm
+- 📄 One-tap PDF expense reports
+- 📱 Clean React Native mobile experience
+
+---
+
 ## Features
 
 |                                          |                                                                                                                     |
@@ -46,34 +63,50 @@ Most expense-splitting apps make you sign up, log in, and add friends before you
 
 ---
 
-## Screenshots
-
-### Create Contro
+## 📱 Screenshots
 
 <div align="center">
-<img src="./assets/screenshots/quick-contro.jpeg" width="220" alt="Create Contro — step 1" />
-&nbsp;&nbsp;
-<img src="./assets/screenshots/quick-contro(2).jpeg" width="220" alt="Create Contro — step 2" />
-&nbsp;&nbsp;
-<img src="./assets/screenshots/quick-contro(3).jpeg" width="220" alt="Create Contro — step 3" />
-</div>
+
+### Create Contro Flow
+
+<table>
+<tr>
+<td align="center">
+<img src="./assets/screenshots/quick-contro.jpeg" width="220" alt="Create Contro screen" /><br/>
+<b>Create Contro</b>
+</td>
+<td align="center">
+<img src="./assets/screenshots/quick-contro(2).jpeg" width="220" alt="Add Expenses screen" /><br/>
+<b>Add Expenses</b>
+</td>
+<td align="center">
+<img src="./assets/screenshots/quick-contro(3).jpeg" width="220" alt="Settlement screen" /><br/>
+<b>Settlement Summary</b>
+</td>
+</tr>
+</table>
 
 <br/>
 
-### Saved Contros &nbsp;·&nbsp; Invoice
+### Saved Contros & Reports
 
-<div align="center">
-<img src="./assets/screenshots/saved-contros.jpeg" width="220" alt="Saved Contros screen" />
-&nbsp;&nbsp;
-<img src="./assets/screenshots/invoice.jpeg" width="220" alt="Invoice screen" />
-</div>
+<table>
+<tr>
+<td align="center">
+<img src="./assets/screenshots/saved-contros.jpeg" width="220" alt="Saved Contros screen" /><br/>
+<b>Saved Contros</b>
+</td>
+<td align="center">
+<img src="./assets/screenshots/invoice.jpeg" width="220" alt="Invoice screen" /><br/>
+<b>Invoice Summary</b>
+</td>
+<td align="center">
+<img src="./assets/screenshots/pdf-invoice.jpeg" width="220" alt="Generated PDF invoice" /><br/>
+<b>Generated PDF Report</b>
+</td>
+</tr>
+</table>
 
-<br/>
-
-### Generated PDF Report
-
-<div align="center">
-<img src="./assets/screenshots/pdf-invoice.jpeg" width="220" alt="Generated PDF invoice — expense breakdown and settlement plan" />
 </div>
 
 ---
@@ -117,6 +150,7 @@ cd contro
 npm install
 npx expo start
 ```
+````
 
 Scan the QR code with the **Expo Go** app, or run on an emulator:
 
@@ -137,7 +171,7 @@ eas build --platform android --profile preview
 
 ## Project Structure
 
-```
+```text
 contro/
 ├── src/
 │   ├── screens/
@@ -187,5 +221,6 @@ React Native Developer
 ---
 
 <div align="center">
-<sub>Built with React Native & Expo</sub>
+<sub>Built with ❤️ using React Native & Expo</sub>
 </div>
+```
