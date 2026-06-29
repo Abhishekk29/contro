@@ -50,21 +50,19 @@ Most expense-splitting apps make you sign up, log in, and add friends before you
 
 <div align="center">
 <!-- Replace these with actual screenshots from /assets -->
-# Entry Screen
+Entry Screen
 <img src="./assets/screenshots/entry.jpeg" width="200" alt="Entry screen" />
-# Create Contro screen
+Create Contro screen
 <img src="./assets/screenshots/quick-contro.jpeg" width="200" alt="Create Contro screen" />
 <img src="./assets/screenshots/quick-contro(2).jpeg" width="200" alt="Create Contro screen" />
 <img src="./assets/screenshots/quick-contro(3).jpeg" width="200" alt="Create Contro screen" />
-# Saved Contros screen
+Saved Contros screen
 <img src="./assets/screenshots/saved-contros.jpeg" width="200" alt="Saved Contros screen" />
-#Invoice screen
+Invoice screen
 <img src="./assets/screenshots/invoice.jpeg" width="200" alt="Invoice screen" />
+Generated PDF Report
+<img src="./assets/screenshots/pdf-invoice.jpeg" width="480" alt="Generated PDF invoice" />
 </div>
-
-### Generated PDF Report
-
-## <img src="./assets/screenshots/pdf-invoice.jpeg" width="480" alt="Generated PDF invoice" />
 
 ## How it works
 
