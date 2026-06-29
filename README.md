@@ -150,8 +150,6 @@ npm install
 npx expo start
 ```
 
-````
-
 Scan the QR code with the **Expo Go** app, or run on an emulator:
 
 ```bash
@@ -195,7 +193,7 @@ contro/
 Contro is intentionally **local-first**:
 
 - Each Contro is stored as a JSON object in AsyncStorage, keyed under a single list
-- No network calls are made for core functionality - splitting, saving, and PDF generation all work offline
+- No network calls are made for core functionality — splitting, saving, and PDF generation all work offline
 - This tradeoff (no cross-device sync) was a deliberate design choice to keep the app instant-on with zero friction, in exchange for simplicity and privacy
 
 ---
@@ -218,8 +216,8 @@ React Native Developer
 [![GitHub](https://img.shields.io/badge/GitHub-Abhishekk29-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Abhishekk29)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-abhisheksharmaendl-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://linkedin.com/in/abhisheksharmaendl)
 
+---
 
 <div align="center">
 <sub>Built with ❤️ using React Native & Expo</sub>
 </div>
-````
