@@ -1,4 +1,3 @@
-````md
 <div align="center">
 
 <img src="./assets/images/logo.png" width="150" alt="Contro logo" />
@@ -150,6 +149,7 @@ cd contro
 npm install
 npx expo start
 ```
+
 ````
 
 Scan the QR code with the **Expo Go** app, or run on an emulator:
@@ -218,9 +218,8 @@ React Native Developer
 [![GitHub](https://img.shields.io/badge/GitHub-Abhishekk29-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Abhishekk29)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-abhisheksharmaendl-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://linkedin.com/in/abhisheksharmaendl)
 
----
 
 <div align="center">
 <sub>Built with ❤️ using React Native & Expo</sub>
 </div>
-```
+````
